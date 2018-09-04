@@ -14,16 +14,7 @@ XSERVER = " \
     ${@bb.utils.contains("MACHINE_FEATURES", "vc4graphics", "xf86-video-modesetting", "xf86-video-fbdev", d)} \
     "
 
-KERNEL_DEVICETREE ?= " \
-    bcm2708-rpi-0-w.dtb \
-    bcm2708-rpi-b.dtb \
-    bcm2708-rpi-b-plus.dtb \
-    bcm2709-rpi-2-b.dtb \
-    bcm2710-rpi-3-b.dtb \
-    bcm2710-rpi-3-b-plus.dtb \
-    bcm2708-rpi-cm.dtb \
-    bcm2710-rpi-cm3.dtb \
-    \
+RPI_KERNEL_DEVICETREE_OVERLAYS ?= " \
     overlays/dwc2.dtbo \
     overlays/hifiberry-amp.dtbo \
     overlays/hifiberry-dac.dtbo \
@@ -43,6 +34,23 @@ KERNEL_DEVICETREE ?= " \
     overlays/pi3-disable-bt.dtbo \
     overlays/pi3-miniuart-bt.dtbo \
     overlays/vc4-kms-v3d.dtbo \
+    overlays/at86rf233.dtbo \
+    "
+
+RPI_KERNEL_DEVICETREE ?= " \
+    bcm2708-rpi-0-w.dtb \
+    bcm2708-rpi-b.dtb \
+    bcm2708-rpi-b-plus.dtb \
+    bcm2709-rpi-2-b.dtb \
+    bcm2710-rpi-3-b.dtb \
+    bcm2710-rpi-3-b-plus.dtb \
+    bcm2708-rpi-cm.dtb \
+    bcm2710-rpi-cm3.dtb \
+    "
+
+KERNEL_DEVICETREE ?= " \
+    ${RPI_KERNEL_DEVICETREE} \
+    ${RPI_KERNEL_DEVICETREE_OVERLAYS} \
     "
 
 # By default:
@@ -75,23 +83,18 @@ def make_dtb_boot_files(d):
     imgtyp = d.getVar('KERNEL_IMAGETYPE')
 
     def transform(dtb):
+        base = os.path.basename(dtb)
         if dtb.endswith('dtb'):
             # eg: whatever/bcm2708-rpi-b.dtb has:
-            #     DEPLOYDIR file: ${KERNEL_IMAGETYPE}-bcm2708-rpi-b.dtb
+            #     DEPLOYDIR file: bcm2708-rpi-b.dtb
             #     destination: bcm2708-rpi-b.dtb
-            base = os.path.basename(dtb)
-            src = '{}-{}'.format(imgtyp, base)
-            dst = base
-            return '{};{}'.format(src, dst)
+            return base
         elif dtb.endswith('dtbo'):
             # overlay dtb:
             # eg: overlays/hifiberry-amp.dtbo has:
-            #     DEPLOYDIR file: ${KERNEL_IMAGETYPE}-hifiberry-amp.dtbo
+            #     DEPLOYDIR file: hifiberry-amp.dtbo
             #     destination: overlays/hifiberry-amp.dtbo
-            base = os.path.basename(dtb)
-            src = '{}-{}'.format(imgtyp, base)
-            dst = dtb
-            return '{};{}'.format(src, dtb)
+            return '{};{}'.format(base, dtb)
 
     return ' '.join([transform(dtb) for dtb in alldtbs.split(' ') if dtb])
 
